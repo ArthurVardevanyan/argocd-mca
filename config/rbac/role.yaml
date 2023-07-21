@@ -8,6 +8,32 @@ rules:
 - apiGroups:
   - argocd.arthurvardevanyan.com
   resources:
+  - clusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - argocd.arthurvardevanyan.com
+  resources:
+  - clusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - argocd.arthurvardevanyan.com
+  resources:
+  - clusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - argocd.arthurvardevanyan.com
+  resources:
   - serviceaccounts
   verbs:
   - create

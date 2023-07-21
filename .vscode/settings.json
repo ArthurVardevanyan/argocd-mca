@@ -30,6 +30,7 @@
         "alertmanager",
         "apimachinery",
         "argocd",
+        "argoproj",
         "arthurvardevanyan",
         "artifactregistry",
         "artifactregistryv",

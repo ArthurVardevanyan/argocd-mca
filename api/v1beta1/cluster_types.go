@@ -27,9 +27,8 @@ import (
 type ClusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Cluster. Edit cluster_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Server     string `json:"server"`
+	Namespaces string `json:"namespaces"`
 }
 
 // ClusterStatus defines the observed state of Cluster
