@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -172,7 +173,7 @@ func (r *ServiceAccountReconciler) Reconcile(reconcilerContext context.Context, 
 
 	uploadToGSM(serviceAccount.Namespace, k8sAuthToken.Status.Token)
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: time.Second * time.Duration(expirationSeconds-60)}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
