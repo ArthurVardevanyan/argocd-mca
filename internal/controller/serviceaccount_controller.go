@@ -30,6 +30,7 @@ import (
 
 	authenticationV1 "k8s.io/api/authentication/v1"
 	coreV1 "k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	argocdv1beta1 "github.com/ArthurVardevanyan/argocd-mca/api/v1beta1"
@@ -172,6 +173,37 @@ func (r *ServiceAccountReconciler) Reconcile(reconcilerContext context.Context, 
 	}
 
 	uploadToGSM(serviceAccount.Namespace, k8sAuthToken.Status.Token)
+
+	rolebinding := &rbacV1.RoleBinding{
+		TypeMeta: metaV1.TypeMeta{
+			Kind:       "RoleBinding",
+			APIVersion: "rbac.authorization.k8s.io/v1",
+		},
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      "argocd",
+			Namespace: serviceAccount.Namespace,
+		},
+		Subjects: []rbacV1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccount.Namespace,
+				Namespace: namespace,
+			},
+		},
+		RoleRef: rbacV1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     "admin",
+		},
+	}
+
+	err = r.Update(reconcilerContext, rolebinding)
+	if err != nil {
+		err = r.Create(reconcilerContext, rolebinding)
+		if err != nil {
+			println(err.Error())
+		}
+	}
 
 	return ctrl.Result{RequeueAfter: time.Second * time.Duration(expirationSeconds-60)}, nil
 }

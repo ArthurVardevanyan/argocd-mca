@@ -138,6 +138,7 @@ func (r *ClusterReconciler) Reconcile(reconcilerContext context.Context, req ctr
 	if err != nil {
 		err = r.Create(reconcilerContext, secret)
 		if err != nil {
+			println(err)
 		}
 	}
 
