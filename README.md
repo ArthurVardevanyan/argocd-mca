@@ -14,6 +14,7 @@ How to Repo was setup
 ```bash
 kubebuilder init --domain arthurvardevanyan.com --repo github.com/ArthurVardevanyan/argocd-mca
 kubebuilder create api --group argocd --version v1beta1 --kind ServiceAccount --namespaced=true
+kubebuilder create api --group argocd --version v1beta1 --kind Cluster --namespaced=true
 ```
 
 ## Getting Started
