@@ -128,10 +128,10 @@ func (r *ServiceAccountReconciler) Reconcile(reconcilerContext context.Context, 
 	var serviceAccount argocdv1beta1.ServiceAccount
 	if err = r.Get(reconcilerContext, req.NamespacedName, &serviceAccount); err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			log.V(1).Info("Artifact Registry Auth Object Not Found or No Longer Exists!")
+			log.V(1).Info("ArgoCD ServiceAccount Object Not Found or No Longer Exists!")
 			return ctrl.Result{}, nil
 		} else {
-			log.Error(err, "Unable to fetch Artifact Registry Auth Object")
+			log.Error(err, "Unable to fetch ArgoCD ServiceAccount Object")
 			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
 	}

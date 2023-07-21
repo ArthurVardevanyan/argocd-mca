@@ -75,10 +75,10 @@ func (r *ClusterReconciler) Reconcile(reconcilerContext context.Context, req ctr
 	var cluster argocdv1beta1.Cluster
 	if err = r.Get(reconcilerContext, req.NamespacedName, &cluster); err != nil {
 		if strings.Contains(err.Error(), "not found") {
-			log.V(1).Info("Artifact Registry Auth Object Not Found or No Longer Exists!")
+			log.V(1).Info("ArgoCD Cluster Object Not Found or No Longer Exists!")
 			return ctrl.Result{}, nil
 		} else {
-			log.Error(err, "Unable to fetch Artifact Registry Auth Object")
+			log.Error(err, "Unable to fetch ArgoCD Cluster Object")
 			return ctrl.Result{}, client.IgnoreNotFound(err)
 		}
 	}

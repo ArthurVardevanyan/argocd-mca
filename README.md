@@ -1,8 +1,6 @@
 # ArgoCD MCA (Multi Cluster Authentication) (WIP)
 
-This is an abstraction to convert the openshift monitoring, and openshift user workload monitoring configmaps into custom resources.
-
-The Controller Inputs Two Custom Resources, and Converts them to ConfigMaps, for the cluster operator to pickup.
+The idea is to automatically provide a central ArgoCD Instance Access to Multiple Namespace in a Remote Cluster using Zero Trust Methods
 
 ## Incepting Controller
 
