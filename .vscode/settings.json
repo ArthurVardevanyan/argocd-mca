@@ -49,6 +49,8 @@
         "metav",
         "monitoringv",
         "rolebinding",
+        "secretmanager",
+        "secretmanagerpb",
         "subresource",
         "thanos",
         "Tolerations",

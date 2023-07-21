@@ -18,6 +18,8 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,6 +32,9 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	argocdv1beta1 "github.com/ArthurVardevanyan/argocd-mca/api/v1beta1"
+
+	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 )
 
 // ServiceAccountReconciler reconciles a ServiceAccount object
@@ -49,6 +54,51 @@ func kubernetesAuthToken(expirationSeconds int) *authenticationV1.TokenRequest {
 	}
 
 	return tokenRequest
+}
+
+func uploadToGSM(namespace string, token string) {
+	// GCP project in which to store secrets in Secret Manager.
+	projectID := os.Getenv("GCP_PROJECT_ID")
+
+	// Create the client.
+	ctx := context.Background()
+	client, err := secretmanager.NewClient(ctx)
+	if err != nil {
+		println(err.Error())
+
+	}
+	defer client.Close()
+
+	// Create the request to create the secret.
+	createSecretReq := &secretmanagerpb.CreateSecretRequest{
+		Parent:   fmt.Sprintf("projects/%s", projectID),
+		SecretId: namespace,
+		Secret: &secretmanagerpb.Secret{
+			Replication: &secretmanagerpb.Replication{
+				Replication: &secretmanagerpb.Replication_Automatic_{
+					Automatic: &secretmanagerpb.Replication_Automatic{},
+				},
+			},
+		},
+	}
+
+	secret, err := client.CreateSecret(ctx, createSecretReq)
+	if err != nil {
+		println(err.Error())
+		return
+	}
+
+	// Declare the payload to store.
+	payload := []byte(token)
+
+	// Build the request.
+	_ = &secretmanagerpb.AddSecretVersionRequest{
+		Parent: secret.Name,
+		Payload: &secretmanagerpb.SecretPayload{
+			Data: payload,
+		},
+	}
+
 }
 
 //+kubebuilder:rbac:groups=argocd.arthurvardevanyan.com,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
@@ -120,7 +170,7 @@ func (r *ServiceAccountReconciler) Reconcile(reconcilerContext context.Context, 
 		log.Error(err, error)
 	}
 
-	log.Info(k8sAuthToken.Status.Token)
+	uploadToGSM(serviceAccount.Namespace, k8sAuthToken.Status.Token)
 
 	return ctrl.Result{}, nil
 }
