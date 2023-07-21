@@ -18,11 +18,16 @@ package controller
 
 import (
 	"context"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	authenticationV1 "k8s.io/api/authentication/v1"
+	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	argocdv1beta1 "github.com/ArthurVardevanyan/argocd-mca/api/v1beta1"
 )
@@ -31,6 +36,19 @@ import (
 type ServiceAccountReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+}
+
+func kubernetesAuthToken(expirationSeconds int) *authenticationV1.TokenRequest {
+	ExpirationSeconds := int64(expirationSeconds)
+
+	tokenRequest := &authenticationV1.TokenRequest{
+		Spec: authenticationV1.TokenRequestSpec{
+			Audiences:         []string{"openshift"},
+			ExpirationSeconds: &ExpirationSeconds,
+		},
+	}
+
+	return tokenRequest
 }
 
 //+kubebuilder:rbac:groups=argocd.arthurvardevanyan.com,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
@@ -46,10 +64,63 @@ type ServiceAccountReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.15.0/pkg/reconcile
-func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *ServiceAccountReconciler) Reconcile(reconcilerContext context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(reconcilerContext)
+	log.V(1).Info(req.Name)
 
-	// TODO(user): your logic here
+	// Common Variables
+	var err error
+	var error string
+
+	var namespace = "argocd-mca-sa"
+
+	var serviceAccount argocdv1beta1.ServiceAccount
+	if err = r.Get(reconcilerContext, req.NamespacedName, &serviceAccount); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			log.V(1).Info("Artifact Registry Auth Object Not Found or No Longer Exists!")
+			return ctrl.Result{}, nil
+		} else {
+			log.Error(err, "Unable to fetch Artifact Registry Auth Object")
+			return ctrl.Result{}, client.IgnoreNotFound(err)
+		}
+	}
+
+	//Reset Error
+	// serviceAccount.Status.Error = ""
+
+	tenantServiceAccount := &coreV1.ServiceAccount{
+		ObjectMeta: metaV1.ObjectMeta{
+			Name:      serviceAccount.Namespace,
+			Namespace: namespace,
+		},
+	}
+	err = r.Update(reconcilerContext, tenantServiceAccount)
+	if err != nil {
+		err = r.Create(reconcilerContext, tenantServiceAccount)
+		if err != nil {
+			error = "Unable to Create Service Account"
+			log.Error(err, error)
+		}
+	}
+
+	// Generate k8s Auth Token
+	const expirationSeconds = 3600
+	k8sAuthToken := kubernetesAuthToken(expirationSeconds)
+	var retrievedServiceAccount coreV1.ServiceAccount
+
+	err = r.Get(reconcilerContext, client.ObjectKey{Name: serviceAccount.Namespace, Namespace: namespace}, &retrievedServiceAccount)
+	if err != nil {
+		error = "Service Account Not Found"
+		log.Error(err, error)
+	}
+
+	err = r.SubResource("token").Create(reconcilerContext, &retrievedServiceAccount, k8sAuthToken)
+	if err != nil {
+		error = "Unable to Create Kubernetes Token"
+		log.Error(err, error)
+	}
+
+	log.Info(k8sAuthToken.Status.Token)
 
 	return ctrl.Result{}, nil
 }
