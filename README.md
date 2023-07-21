@@ -1,14 +1,46 @@
-# argocd-mca
-// TODO(user): Add simple overview of use/purpose
+# ArgoCD MCA (Multi Cluster Authentication)
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+This is an abstraction to convert the openshift monitoring, and openshift user workload monitoring configmaps into custom resources.
+
+The Controller Inputs Two Custom Resources, and Converts them to ConfigMaps, for the cluster operator to pickup.
+
+## Incepting Controller
+
+How to Repo was setup
+
+- <https://book.kubebuilder.io/cronjob-tutorial/cronjob-tutorial.html>
+- <https://book.kubebuilder.io/cronjob-tutorial/new-api.html>
+
+```bash
+kubebuilder init --domain arthurvardevanyan.com --repo github.com/ArthurVardevanyan/argocd-mca
+kubebuilder create api --group argocd --version v1beta1 --kind ServiceAccount --namespaced=true
+```
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+
+### Building Image
+
+Build and push your image to the location specified by `IMG`:
+
+```bash
+go get -u
+go mod tidy
+```
+
+```bash
+# https://catalog.redhat.com/software/containers/ubi9/ubi-minimal/
+export KO_DEFAULTBASEIMAGE=registry.access.redhat.com/ubi9-minimal:9.2-691
+export DATE=$(date --utc '+%Y%m%d-%H%M')
+
+# For OpenShift
+export KO_DOCKER_REPO=registry.arthurvardevanyan.com/homelab/argocd-mca
+# Test Builds / Release Builds
+export EXPIRE=1w # 26w
+ko build --platform=linux/amd64 --bare --sbom none --image-label quay.expires-after="${EXPIRE}" --tags "${DATE}" # Quay Doesn't Support SBOM KO Yet
+```
 
 ### Running on the cluster
+
 1. Install Instances of Custom Resources:
 
 ```sh
@@ -28,6 +60,7 @@ make deploy IMG=<some-registry>/argocd-mca:tag
 ```
 
 ### Uninstall CRDs
+
 To delete the CRDs from the cluster:
 
 ```sh
@@ -35,6 +68,7 @@ make uninstall
 ```
 
 ### Undeploy controller
+
 UnDeploy the controller from the cluster:
 
 ```sh
@@ -42,15 +76,18 @@ make undeploy
 ```
 
 ## Contributing
+
 // TODO(user): Add detailed information on how you would like others to contribute to this project
 
 ### How it works
+
 This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
 
 It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/),
 which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
 
 ### Test It Out
+
 1. Install the CRDs into the cluster:
 
 ```sh
@@ -66,6 +103,7 @@ make run
 **NOTE:** You can also run this in one step by running: `make install run`
 
 ### Modifying the API definitions
+
 If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
 
 ```sh
@@ -91,4 +129,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-
